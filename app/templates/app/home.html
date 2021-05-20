@@ -1,0 +1,189 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BhavCopy</title>
+    <!-- Bootstrap core CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css" />
+    <!-- Required scripts -->
+    <script src="https://unpkg.com/vue@latest/dist/vue.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+    <!--fontawesome-->
+    <script src="https://kit.fontawesome.com/59d08ea832.js" crossorigin="anonymous"></script>
+
+    <!-- Custom styles for this template -->
+    <link href="{% static 'app/css/style.css' %}" rel="stylesheet" />
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/png" href="{% static 'app/favicon.ico' %}"/>
+</head>
+
+<body class="text-center">
+
+    <!--Navbar-->
+    <header>
+        <div class="collapse bg-dark" id="navbarHeader">
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-8 col-md-7 py-4">
+                        <h4 class="text-white">About</h4>
+                        <p class="text-muted">This single page app allows users to get the latest BSE bhavcopy data.
+                            Users can also search stocks and the results will be displayed in the table below. You can
+                            also download the data in the table as a CSV file. </p>
+                    </div>
+                    <div class="col-sm-4 offset-md-1 py-4">
+                        <h4 class="text-white">Contact</h4>
+                        <ul class="list-unstyled">
+                            <li><a href="https://www.linkedin.com/in/sagar-jain-9406041a9/" class="text-white"
+                                    target="_blank">Linkedin</a></li>
+                            <li><a href="https://github.com/sagarjain007/" class="text-white" target="_blank">Github</a>
+                            </li>
+                            <li><a href="mailto:sagarjain1070@gmail.com" class="text-white">Email me</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="navbar navbar-dark bg-dark shadow-sm">
+            <div class="container">
+                <a href="#" class="navbar-brand d-flex align-items-center">
+                    <i class="far fa-3x fa-chart-bar"></i>
+                    <strong>Bhavcopy</strong>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarHeader"
+                    aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <!--Navbar end-->
+
+    <div id="app">
+        <div class="overflow-auto">
+            <main class="form-search">
+                <form autocomplete="off">
+                    <i class="fas fa-table fa-9x logo rainbow_text_animated"></i>
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="floatingInput" placeholder="RELIANCE"
+                            v-model="search_term" required>
+                        <label for="floatingInput">Enter Security Name</label>
+                    </div>
+
+                    <button class="w-100 btn btn-lg btn-dark" v-on:click.prevent="getSearchData()">Search</button>
+                    <p class="mt-5 mb-3 text-muted">&copy; BhavCopy (Last Updated: <i>{{date.update_date|date:"d M Y"}}</i>)</p>
+                </form>
+            </main>
+            <b-table class="sbar" id="my-table" :items="items" :per-page="perPage" :current-page="currentPage"
+                :rows="15" head-row-variant="dark" responsive bordered striped hover sticky-header="500px"></b-table>
+
+            <b-pagination v-model="currentPage" :total-rows="rows" :per-page="perPage" aria-controls="my-table"
+                align="center" size="lg"></b-pagination>
+        </div>
+    </div>
+    <!--CSV Download-->
+    <div>
+        <button type="button" class="btn btn-outline-success btn-lg csv">Download CSV</button>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script>
+        var url = '/api/app/';
+        //TABLE PAGINATION
+        var vm = new Vue({
+            el: '#app',
+            delimiters: ['[[', ']]'],
+            data: {
+                perPage: 50,
+                currentPage: 1,
+                search_term: '',
+                items: []
+            },
+            computed: {
+                rows() {
+                    return this.items.length
+                }
+            },
+            mounted: function () {
+                this.getAllData();
+            },
+            methods: {
+                getAllData: function () {
+                    axios.get(url)
+                        .then(function (res) {
+                            vm.items = res.data;
+                        });
+                },
+                getSearchData: function () {
+                    url = '/api/app/';
+                    if (this.search_term !== '' || this.search_term !== null) {
+                        url = `/api/app/?search=${vm.search_term}`
+                    } axios.get(url)
+                        .then(function (res) {
+                            vm.items = res.data;
+                        });
+
+                }
+            }
+        });
+
+        //CSV DOWNLOAD BUTTON
+        function download_csv(csv, filename) {
+            var csvFile;
+            var downloadLink;
+
+            // CSV FILE
+            csvFile = new Blob([csv], { type: "text/csv" });
+
+            // Download link
+            downloadLink = document.createElement("a");
+
+            // File name
+            downloadLink.download = filename;
+
+            // We have to create a link to the file
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+
+            // Make sure that the link is not displayed
+            downloadLink.style.display = "none";
+
+            // Add the link to your DOM
+            document.body.appendChild(downloadLink);
+
+            // Lanzamos
+            downloadLink.click();
+        }
+
+        function export_table_to_csv(html, filename) {
+            var csv = [];
+            csv.push("SC_CODE,SC_NAME,OPEN,HIGH,LOW,CLOSE")
+            for (var i = 0; i < vm.items["length"]; i++) {
+                row = []
+                row.push(vm.items[i].code)
+                row.push(vm.items[i].name)
+                row.push(vm.items[i].open_price)
+                row.push(vm.items[i].high_price)
+                row.push(vm.items[i].low_price)
+                row.push(vm.items[i].close_price)
+                csv.push(row.join(","));
+            }
+            // Download CSV
+            download_csv(csv.join("\n"), filename);
+        }
+
+        document.querySelector(".csv").addEventListener("click", function () {
+            var html = document.querySelector("table").outerHTML;
+            export_table_to_csv(html, document.querySelector("p i").innerText + ".csv");
+        });
+    </script>
+</body>
+
+</html>
